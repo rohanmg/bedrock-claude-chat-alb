@@ -10,18 +10,22 @@ import { Construct } from "constructs";
 import { Auth } from "./constructs/auth";
 import { Api } from "./constructs/api";
 import { Database } from "./constructs/database";
-import { Frontend } from "./constructs/frontend";
+// import { Frontend } from "./constructs/frontend";
+import { FrontendALB} from "./constructs/frontend-alb";
 import { WebSocket } from "./constructs/websocket";
 import * as cdk from "aws-cdk-lib";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import { Embedding } from "./constructs/embedding";
 import { VectorStore } from "./constructs/vectorstore";
 import { UsageAnalysis } from "./constructs/usage-analysis";
+import { FrontendWafALB } from "./constructs/frontend-waf-alb";
 
 export interface BedrockChatStackProps extends StackProps {
   readonly bedrockRegion: string;
-  readonly webAclId: string;
+  readonly env: cdk.Environment;
   readonly enableUsageAnalysis: boolean;
+  readonly allowedIpV4AddressRanges: string[];
+  readonly allowedIpV6AddressRanges: string[];
 }
 
 export class BedrockChatStack extends cdk.Stack {
@@ -99,16 +103,27 @@ export class BedrockChatStack extends cdk.Stack {
       bedrockRegion: props.bedrockRegion,
     });
 
-    const frontend = new Frontend(this, "Frontend", {
+    const wafalb = new FrontendWafALB(this, 'FrontendWafALB', {
+      env: {
+        region: "us-east-1",
+      },
+      allowedIpV4AddressRanges: props.allowedIpV4AddressRanges,
+      allowedIpV6AddressRanges: props.allowedIpV6AddressRanges,
+      vpc
+    });
+
+    const frontendALB = new FrontendALB(this, "FrontendALB", {
       backendApiEndpoint: backendApi.api.apiEndpoint,
       webSocketApiEndpoint: websocket.apiEndpoint,
       auth,
       accessLogBucket,
-      webAclId: props.webAclId,
+      vpc,
+      webAclId: wafalb.webAclArn.value,
     });
+    
     documentBucket.addCorsRule({
       allowedMethods: [HttpMethods.PUT],
-      allowedOrigins: [frontend.getOrigin(), "http://localhost:5173"],
+      allowedOrigins: [frontendALB.getOrigin(), "http://localhost:5173"],
       allowedHeaders: ["*"],
       maxAge: 3000,
     });
@@ -138,7 +153,7 @@ export class BedrockChatStack extends cdk.Stack {
       value: documentBucket.bucketName,
     });
     new CfnOutput(this, "FrontendURL", {
-      value: frontend.getOrigin(),
+      value: frontendALB.getOrigin(),
     });
   }
 }

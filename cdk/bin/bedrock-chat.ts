@@ -2,7 +2,9 @@
 import "source-map-support/register";
 import * as cdk from "aws-cdk-lib";
 import { BedrockChatStack } from "../lib/bedrock-chat-stack";
-import { FrontendWafStack } from "../lib/frontend-waf-stack";
+// import { FrontendWafStack } from "../lib/frontend-waf-stack";
+// import { FrontendWafStackALB } from "../lib/frontend-waf-stack-alb";
+import { log } from "console";
 
 const app = new cdk.App();
 
@@ -20,20 +22,30 @@ const ENABLE_USAGE_ANALYSIS: boolean = app.node.tryGetContext(
 // WAF for frontend
 // 2023/9: Currently, the WAF for CloudFront needs to be created in the North America region (us-east-1), so the stacks are separated
 // https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-wafv2-webacl.html
-const waf = new FrontendWafStack(app, `FrontendWafStack`, {
-  env: {
-    region: "us-east-1",
-  },
-  allowedIpV4AddressRanges: ALLOWED_IP_V4_ADDRESS_RANGES,
-  allowedIpV6AddressRanges: ALLOWED_IP_V6_ADDRESS_RANGES,
-});
+// const waf = new FrontendWafStack(app, `FrontendWafStack`, {
+//   env: {
+//     region: "us-east-1",
+//   },
+//   allowedIpV4AddressRanges: ALLOWED_IP_V4_ADDRESS_RANGES,
+//   allowedIpV6AddressRanges: ALLOWED_IP_V6_ADDRESS_RANGES,
+// });
+
+// const wafalb = new FrontendWafStackALB(app, 'FrontendWafStackALB', {
+//   env: {
+//     region: "us-east-1",
+//   },
+//   allowedIpV4AddressRanges: ALLOWED_IP_V4_ADDRESS_RANGES,
+//   allowedIpV6AddressRanges: ALLOWED_IP_V6_ADDRESS_RANGES,
+// });
 
 new BedrockChatStack(app, `BedrockChatStack`, {
   env: {
     region: process.env.CDK_DEFAULT_REGION,
+    account: process.env.CDK_DEFAULT_ACCOUNT
   },
   crossRegionReferences: true,
   bedrockRegion: BEDROCK_REGION,
-  webAclId: waf.webAclArn.value,
+  allowedIpV4AddressRanges: ALLOWED_IP_V4_ADDRESS_RANGES,
+  allowedIpV6AddressRanges: ALLOWED_IP_V6_ADDRESS_RANGES,
   enableUsageAnalysis: ENABLE_USAGE_ANALYSIS,
 });
