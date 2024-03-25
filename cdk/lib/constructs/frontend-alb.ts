@@ -71,8 +71,8 @@ export class FrontendALB extends Construct {
     //   zoneName: this.alb.loadBalancerDnsName,
     // });
     
-    // const certificateArn = 'arn:aws:acm-pca:us-east-1:519930237078:certificate-authority/3670fd57-54fe-4d0e-84e7-7f1a5ce2d572'; // replace with your certificate ARN
-    // const certificate = acm.Certificate.fromCertificateArn(this, 'Certificate', certificateArn);
+    const certificateArn = 'arn:aws:acm:us-east-1:519930237078:certificate/fc8b2b08-e13c-403e-8ac5-9c3881e78bd3';
+    const certificate = acm.Certificate.fromCertificateArn(this, 'Certificate', certificateArn);
 
 
     // new route53.CnameRecord(this, "CnameRecord", {
@@ -81,15 +81,13 @@ export class FrontendALB extends Construct {
     //   domainName: this.alb.loadBalancerDnsName,
     // });
     const listener = this.alb.addListener('Listener', {
-      port: 80,
-      protocol: ApplicationProtocol.HTTP,
-      // certificates: [ListenerCertificate.fromCertificateManager(certificate)],
-      // defaultAction: ListenerAction.fixedResponse(200),
+      port: 443,
+      protocol: ApplicationProtocol.HTTPS,
+      certificates: [ListenerCertificate.fromCertificateManager(certificate)],
     });
   
     const targetGroup = new ApplicationTargetGroup(this, "TargetGroup", {
       vpc: props.vpc,
-      protocol: ApplicationProtocol.HTTP,
       port: 80,
       targetType: TargetType.IP,
       targetGroupName: "bedrock-claude-chatbot",

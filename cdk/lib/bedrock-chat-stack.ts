@@ -123,7 +123,7 @@ export class BedrockChatStack extends cdk.Stack {
     
     documentBucket.addCorsRule({
       allowedMethods: [HttpMethods.PUT],
-      allowedOrigins: [frontendALB.getOrigin(), "http://localhost:5173"],
+      allowedOrigins: ["www.rohxps.com", "http://localhost:5173"],
       allowedHeaders: ["*"],
       maxAge: 3000,
     });
@@ -153,7 +153,7 @@ export class BedrockChatStack extends cdk.Stack {
       value: documentBucket.bucketName,
     });
     new CfnOutput(this, "FrontendURL", {
-      value: frontendALB.getOrigin(),
+      value: "www.rohxps.com",
     });
   }
 }
